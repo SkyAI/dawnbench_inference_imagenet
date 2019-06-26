@@ -1,1 +1,0 @@
-resnet50_imagenet_int8.pb filter=lfs diff=lfs merge=lfs -text
