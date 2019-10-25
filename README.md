@@ -28,6 +28,7 @@ cd /dawnbench/
 ./make.sh
 
 # Run
+./set_env.sh
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD
 ./inference engine/engine.plan val_files/ labels.txt
 ```
