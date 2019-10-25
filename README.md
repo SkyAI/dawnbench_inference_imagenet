@@ -11,6 +11,7 @@
 ├── ILSVRC2012_val_00000004.JPEG
 ├── ILSVRC2012_val_00000005.JPEG
 ├── ILSVRC2012_val_00000006.JPEG
+...
 ```
 3. Pull nvcr.io/nvidia/tensorrt:19.09-py3 from NGC.
 4. Start nvcr.io/nvidia/tensorrt:19.09-py3 container.
