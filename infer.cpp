@@ -16,7 +16,7 @@
 using namespace std;
 using namespace cv;
 
-vector<size_t> argsort(const float *v, const int Len){
+vector<size_t> argSort(const float *v, const int Len){
 
     vector<size_t> idx(Len);
     iota(idx.begin(), idx.end(), 0);
@@ -25,7 +25,7 @@ vector<size_t> argsort(const float *v, const int Len){
     return idx;
 }
 
-int getFileList(string dirent, vector<string> &FileList){
+int getFileList(string dirent, vector<string> &fileList){
 
     DIR *p_dir;
     struct dirent *p_dirent;
@@ -38,40 +38,40 @@ int getFileList(string dirent, vector<string> &FileList){
     {
         string s(p_dirent->d_name);
         if(s != "." && s != "..")
-            FileList.push_back(s);
+            fileList.push_back(s);
     }
     closedir(p_dir);
-    return FileList.size();
+    return fileList.size();
 }
 
-int preprocess(vector<vector<float>> &dst_vec, vector<string> fileList, string filePath, vector<int> inputSize, int batch_size=1, int channels=3)
+int doPreprocess(vector<vector<float>> &dstVec, vector<string> fileList, string filePath, vector<int> inputSize, int batchSize=1, int channels=3)
 {
     vector<float> mean {0.485, 0.456, 0.406};
     vector<float> std {0.229, 0.224, 0.225};
     vector<float> src;
-    vector<float> dst (batch_size * channels * inputSize[0] * inputSize[1]);
+    vector<float> dst (batchSize * channels * inputSize[0] * inputSize[1]);
     string imgPath;
 
-    for (auto imagename: fileList)
+    for (auto imageName: fileList)
     {
-        imgPath = filePath+imagename;
+        imgPath = filePath + imageName;
         auto image = imread(imgPath, IMREAD_COLOR);
-        auto src_height = image.size().height;
-        auto src_width = image.size().width;
-	int dst_width;
-	int dst_height;
-        if (src_height > src_width) {
-	    dst_width = 256;
-	    dst_height = floor(256 * src_height / src_width);
+        auto srcHeight = image.size().height;
+        auto srcWidth = image.size().width;
+	int dstWidth;
+	int dstHeight;
+        if (srcHeight > srcWidth) {
+	    dstWidth = 256;
+	    dstHeight = floor(256 * srcHeight / srcWidth);
 	}
         else {
-	    dst_height = 256;
-	    dst_width = floor(256 * src_width / src_height);
+	    dstHeight = 256;
+	    dstWidth = floor(256 * srcWidth / srcHeight);
 	}
-	cv::resize(image, image, Size(dst_width, dst_height), 0, 0, cv::INTER_AREA);
+	cv::resize(image, image, Size(dstWidth, dstHeight), 0, 0, cv::INTER_AREA);
 
-	const int offset_H = (dst_height - inputSize[0])/2;
-	const int offset_W = (dst_width - inputSize[1])/2;
+	const int offset_H = (dstHeight - inputSize[0])/2;
+	const int offset_W = (dstWidth - inputSize[1])/2;
 	cv::Rect myROI(offset_W, offset_H, inputSize[0], inputSize[1]);
 	image = image(myROI).clone();
 
@@ -85,7 +85,7 @@ int preprocess(vector<vector<float>> &dst_vec, vector<string> fileList, string f
             return -1;
         }
 
-        for (int bs = 0; bs < batch_size; bs++) {
+        for (int bs = 0; bs < batchSize; bs++) {
             for (int c = 0; c < channels; c++) {
                 for (int j = 0, hw = inputSize[0] * inputSize[1]; j < hw; j++) {
                     dst[bs * channels * hw + c * hw + j] = (src[channels * j + 2 - c] - mean[c]) / std[c];
@@ -93,17 +93,17 @@ int preprocess(vector<vector<float>> &dst_vec, vector<string> fileList, string f
             }
         }
 
-        dst_vec.push_back(dst);
+        dstVec.push_back(dst);
     }
-    return dst_vec.size();
+    return dstVec.size();
 }
 
 int main(int argc, char *argv[]) {
 	
     int batch_size = 1;
     if (argc != 4) {
-            cerr << "Usage: " << argv[0] << " engine.plan filePath LabelFile" << endl;
-            return 1;
+            cerr << "Usage: " << argv[0] << " engine.plan imagePath labelFile" << endl;
+            return -1;
     }
 
     cout << "Read file list..." << endl;
@@ -115,20 +115,20 @@ int main(int argc, char *argv[]) {
     }
 
     cout << "Make label map..." << endl;
-    string LabelFile = argv[3];
-    ifstream iFile(LabelFile);
+    string labelFile = argv[3];
+    ifstream iFile(labelFile);
     string s;
-    string imagename;
+    string imageName;
     int label;
     string delimiter = " ";
     size_t pos = 0;
-    unordered_map<string, int> label_map;
+    unordered_map<string, int> labelMap;
     while (getline(iFile, s))
     {
         pos = s.find(delimiter);
-        imagename = s.substr(0, pos);
+        imageName = s.substr(0, pos);
         label = stoi(s.substr(pos+1, s.length()));
-        label_map.insert(make_pair(imagename, label));
+        labelMap.insert(make_pair(imageName, label));
     }
 
     cout << "Loading engine..." << endl;
@@ -137,8 +137,8 @@ int main(int argc, char *argv[]) {
     auto outputSize = engine.getOutputSize();
 
     cout << "Do preprocessing..." << endl;
-    vector<vector<float>> dst_vec;
-    if (preprocess(dst_vec, fileList, filePath, inputSize, 1, 3) < 0)
+    vector<vector<float>> dstVec;
+    if (doPreprocess(dstVec, fileList, filePath, inputSize, 1, 3) < 0)
     {
         return -1;
     }
@@ -148,29 +148,29 @@ int main(int argc, char *argv[]) {
     float* output;
     vector<size_t> index;
     unordered_map<string, int>::iterator it;
-    int true_index = 0;
-    int true_count = 0;
+    int trueLabel = 0;
+    int trueCount = 0;
     double totaltime = 0;
-    for (auto imagename: fileList){
-        engine.load_image(dst_vec[count]);
+    for (auto imgName: fileList){
+        engine.loadImage(dstVec[count]);
         auto start = chrono::steady_clock::now();
         output = engine.infer();
         auto stop = chrono::steady_clock::now();
-        auto timing = chrono::duration_cast<chrono::duration<double>>(stop - start).count();
+        auto latency = chrono::duration_cast<chrono::duration<double>>(stop - start).count();
         if (count > 9)
-	    totaltime += timing;        
+	    totaltime += latency;        
 
-        index = argsort(output, batch_size * outputSize[0]);
-        it = label_map.find(imagename);
-        true_index = it->second;
+        index = argSort(output, batch_size * outputSize[0]);
+        it = labelMap.find(imgName);
+        trueLabel = it->second;
         for (int i = 0; i < 5; i++){
-            if (index[i] == (true_index-1))
-                true_count++;
+            if (index[i] == (trueLabel-1))
+                trueCount++;
         }
         count++;
     }
    
-    cout << "Top5 inference accuracy : " << double(true_count)/count << endl;
+    cout << "Top5 inference accuracy : " << double(trueCount)/count << endl;
     cout << "avg inference time : " << totaltime/(count-10)*1000.0 << "ms" << endl; 
 
 }

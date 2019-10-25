@@ -14,14 +14,6 @@ public:
     // Create engine from engine path
     Engine(const string &engine_path, bool verbose=false);
 
-    // Create engine from serialized model
-    /*
-    Engine(const char *model, size_t size,
-        size_t batch, string precision,
-        const vector<string>& calibration_files, string model_name, 
-        string calibration_table, bool verbose, size_t workspace_size=(1ULL << 30));
-    */
-
     ~Engine();
 
     // Save model to path
@@ -46,7 +38,7 @@ public:
 
     const char* getBindingName(int index);
 
-    void load_image(vector<float> image);
+    void loadImage(vector<float> image);
 
 private:
     IRuntime *_runtime = nullptr;
