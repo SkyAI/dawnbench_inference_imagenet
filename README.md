@@ -15,7 +15,11 @@
 ```
 3. Pull nvcr.io/nvidia/tensorrt:19.09-py3 from NGC.
 4. Start nvcr.io/nvidia/tensorrt:19.09-py3 container.
-5. In the container, run cmd as below:
+5. Set environment in host (Modify the script according to your situation):
+```
+./set_env.sh
+```
+6. In the container, run cmd as below:
 ```
 # Install opencv
 apt-get update
@@ -28,7 +32,6 @@ cd /dawnbench/
 ./make.sh
 
 # Run
-./set_env.sh
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD
 ./inference engine/engine.plan val_files/ labels.txt
 ```

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GPU_ID=2 #Change this to your GPU id
+GPU_ID=0 #Change this to your GPU id
 MAX_SM_CLOCK=`nvidia-smi -q -d CLOCK -i ${GPU_ID} | grep -A4 "Max Clocks" | grep SM | awk '{print $3}'`
 MAX_MEM_CLOCK=`nvidia-smi -q -d CLOCK -i ${GPU_ID} | grep -A4 "Max Clocks" | grep Memory | awk '{print $3}'`
 nvidia-smi -pm 1 -i ${GPU_ID}
